@@ -15,8 +15,8 @@ So the parent can merge, vet, and rank mechanically:
 - **Canonical key** — `<smell>:<module>`, e.g. `redundant:retry`, `inconsistent:cost-charging`.
   This is how the parent groups the same finding from two agents — pick the key carefully.
 - **Kind** — `violation` (objective: verified dead code, `as any` on a money seam) or
-  `judgement call` (heuristic: shallow module, "should be one module"). Drives whether it's
-  safe to batch-fix or must be grilled first.
+  `judgement call` (heuristic: shallow module, "should be one module"). Distinguishes a clean
+  work item from one that needs a decision first.
 - **Evidence** — `file:line` **plus a short quoted hunk**, so the parent vets without re-finding it.
 - **Effort** (S/M/L), **risk** of the fix, **confidence**. These are the inputs to the
   parent's value × confidence × (1/effort) ranking — omit them and the finding can't be ranked.

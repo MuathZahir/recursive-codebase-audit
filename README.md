@@ -48,7 +48,9 @@ parent. That is why the tree beats N independent reviews.
    the shared machinery (cost, infra, types, config).
 4. **Consolidate** the returned reports: vet every finding against source, group by canonical key,
    and the cross-feature patterns are the prize.
-5. **Deliver** one ranked report and (if asked) drive the fixes in verifiable batches.
+5. **Deliver** one ranked report — diagnosis, ranked opportunities, confirmed dead code,
+   coverage, and considered-and-rejected notes. **Analysis only: the skill finds and ranks; it
+   never edits code.** The report is the handoff to whatever turns findings into work.
 
 ## Design principles
 

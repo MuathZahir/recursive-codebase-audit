@@ -52,7 +52,8 @@ just use a normal review instead — this is for breadth.
 3. **Fan out** orchestrators in parallel — per-feature *verticals* plus *cross-cutting*
    agents for the shared machinery (cost, infra, types, config).
 4. **Consolidate** the returned reports: the cross-feature patterns are the prize.
-5. **Deliver** one ranked report and (if asked) drive the fixes.
+5. **Deliver** one ranked report. This skill is **analysis only** — it finds and ranks; it
+   never edits code. The report is the handoff.
 
 ---
 
@@ -73,7 +74,7 @@ Grep, and a couple of `ls`/`find` calls to answer:
   now. They name good seams, settle "inconsistencies" that are actually deliberate, and
   give you the shared vocabulary the whole tree will use.
 - How do you **build / test / lint / typecheck** this repo (exact commands)? Capture them —
-  if you drive fixes in Step 5 they become the verification gates.
+  the report carries them so whoever implements the findings inherits the verification gates.
 
 Write the map down — it becomes your scoping plan for Step 3. Before you fan out,
 **validate the scopes resolve**: the feature dirs exist, the doomed-code paths are real. A
@@ -179,9 +180,11 @@ Return the briefing's report format. Be concrete; mark uncertainty.
 )
 ```
 
-Scale the fan-out to the task: a quick audit might be 3 orchestrators with 2 leaves
-each; a thorough one 8 orchestrators with 3-4 leaves each. Tell the user the shape
-you're using and roughly how many agents — this can be a large token spend.
+Let the tree shape **fall out of the map** rather than picking a preset size: one
+orchestrator per vertical and per cross-cutting concern you found in Step 1, and leaves per
+sub-area each orchestrator is too big to hold alone. A small codebase needs a few; a sprawling
+one with many features and layers needs more. Tell the user the shape you're using and roughly
+how many agents — this can be a large token spend.
 
 ## Step 4 — Consolidate (where the value is)
 
@@ -197,24 +200,37 @@ When reports return, do not just concatenate them. Cross-reference:
   *mis-attributed evidence* (real finding, wrong file/line), and *duplicates* across agents.
   Leaf agents especially over-claim dead code — when two reports disagree, resolve it against
   source, not by trusting either. Any code you quote in the final report comes from **your own
-  read**, never pasted from a sub-agent — a wrong excerpt becomes a wrong fix.
+  read**, never pasted from a sub-agent — a wrong excerpt becomes a wrong fix. If a top
+  cross-cutting finding spans more sites than you can verify inline, spawn one focused agent to
+  confirm and quantify it across all of them before it enters the report — this is the finding
+  type no first-wave agent could see whole, so it's the one most worth a second look.
 - **Rank** by value × confidence × (1/effort), using the effort/risk/confidence each agent
   reported. Split the list by kind: **violations** (objective — verified dead code, `as any`
-  on a money seam) are safe to batch-fix; **judgement calls** (heuristic — shallow module,
-  "should be one module") get grilled before anyone touches them. Cheap high-confidence
-  violations first, structural consolidations next, speculative redesigns last.
+  on a money seam) become clean, self-contained work items; **judgement calls** (heuristic —
+  shallow module, "should be one module") need a decision before anyone acts, so flag them as
+  such. Cheap high-confidence violations rank first, structural consolidations next,
+  speculative redesigns last.
 - **Separate latent bugs from cleanliness** — an audit often surfaces real bugs
   (something priced but never charged, a render path that writes a row but no file).
   Call those out distinctly; they may deserve their own fix regardless of the cleanup.
 
 ## Step 5 — Deliver
 
-Produce one ranked report: the diagnosis in a sentence, the ranked opportunities
-with file:line and locality/leverage rationale, the confirmed dead code, and (if
-removing something) the authoritative deletion manifest with safe ordering. Then ask
-the user which thread to pull — or, if they've authorized it, start executing the
-high-confidence **violations** in verifiable batches (against the build/test/lint commands
-you captured in Step 1), and grill the **judgement calls** before touching them.
+**This skill is analysis only: produce the report, never edit code.** The report is the
+deliverable — structured so its findings can be sliced into work items downstream (expect far
+more than one session's worth). Include:
+
+- The **diagnosis** in a sentence.
+- The **ranked opportunities** with `file:line`, locality/leverage rationale, and each
+  finding's kind (`violation` / `judgement call`) so clean tickets and decision-needing items
+  are distinguishable — plus the build/test/lint commands from Step 1 as the verification gates.
+- The **confirmed dead code**, and (if removing something) the authoritative deletion manifest
+  with safe ordering.
+- **Coverage** — which areas each orchestrator covered and what was *not* audited, so the report
+  never implies more completeness than it has. Derive this from your Step 1 map and spawn plan.
+- **Considered and rejected** — the notable false-positives the vet caught and why (e.g. a
+  "dead" export that's wired through a registry). This stops the same non-issues from being
+  re-investigated downstream.
 
 ---
 

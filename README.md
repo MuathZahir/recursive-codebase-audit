@@ -76,22 +76,11 @@ recursive-codebase-audit/
 
 ## Installation
 
-Clone into your Claude Code skills directory:
-
 ```bash
-git clone https://github.com/MuathZahir/recursive-codebase-audit.git \
-  ~/.claude/skills/recursive-codebase-audit
+npx skills add MuathZahir/recursive-codebase-audit
 ```
 
-On Windows (PowerShell):
-
-```powershell
-git clone https://github.com/MuathZahir/recursive-codebase-audit.git `
-  "$env:USERPROFILE\.claude\skills\recursive-codebase-audit"
-```
-
-Claude Code discovers it on the next session. It's also a fit for project-scoped skills under
-`.claude/skills/` in a repo.
+Claude Code discovers it on the next session.
 
 ## Usage
 

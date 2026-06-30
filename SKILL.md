@@ -1,18 +1,19 @@
 ---
 name: recursive-codebase-audit
 description: >-
-  Hunt for issues across an entire codebase using a recursive tree of parallel
-  subagents — dead code, redundancy, inconsistency between similar features,
-  wrong-tool usage (e.g. hand-rolled validation instead of zod), weak typing
-  (`any`, unsafe casts), shallow modules, and feature/code removal. The root
-  agent maps the repo and fans out per-feature and cross-cutting orchestrators;
-  each orchestrator spawns its own leaf agents, and reports bubble back up so
-  shared problems become visible. Use this whenever the user wants to audit,
-  clean up, de-bloat, find dead/duplicated code, find inconsistencies across
-  features, plan a large removal/refactor, or asks to "look for issues
-  throughout the codebase" / "review the whole codebase" / "find everything
-  wrong" — especially when the area is too big for one agent to hold at once.
-  Prefer this over a single-pass review for anything repo-wide or multi-feature.
+  Audit a LARGE, multi-feature codebase for issues that mostly show up across features —
+  dead code, redundancy, inconsistency between parallel features, wrong-tool usage (e.g.
+  hand-rolled validation instead of zod), weak typing (`any`, unsafe casts), shallow modules,
+  and large removals/refactors. Builds a recursive tree of parallel subagents: the root maps
+  the repo and fans out per-feature and cross-cutting orchestrators; each orchestrator spawns
+  its own leaf agents, and reports bubble up so problems repeated across features become
+  visible. Analysis only — produces a ranked diagnostic report, never edits code. Reach for it
+  when the area is genuinely too big for one agent to hold at once and a repo-wide pattern
+  (duplication, inconsistency, a sprawling removal) is the real question; it deliberately
+  spends a lot of tokens, so for anything that fits in one agent's head use a normal review
+  instead. Triggers: "audit the whole codebase," "find dead/duplicated code across features,"
+  "why is every X slightly different," "plan the removal of feature Y and everything only it
+  uses."
 ---
 
 # Recursive Codebase Audit
@@ -43,6 +44,12 @@ cruft," "find dead/duplicated code," "why is every generation type slightly
 different," "plan the removal of feature X and everything only it uses,"
 "find inconsistencies across our services." If the scope fits in one agent's head,
 just use a normal review instead — this is for breadth.
+
+Two honest caveats before you commit to it. First, it's a **deliberate token spend** — dozens
+of agents on a large repo. Second, the deliverable is a **large diagnostic**, a ranked report
+of findings, not a handful of quick fixes. It pays off when you have a way to absorb that
+report (turn it into issues/tasks for later work); if you just want a couple of quick wins, a
+single-pass review is the better tool.
 
 ## The five-step flow
 
@@ -104,15 +111,12 @@ point and fill in the project specifics. The briefing must pin down:
 
 ## Step 3 — Fan out the tree (in parallel, one turn)
 
-Spawn orchestrators with the **Agent** tool. Two agent types matter:
-
-- `Explore` — read-only, fast fan-out, **cannot spawn its own subagents** (no Agent
-  tool). Perfect for **leaf** agents.
-- `general-purpose` — has the Agent tool, **can recurse**. Use it for **orchestrators**
-  that must spawn their own leaves.
-
-So: **orchestrators are `general-purpose`; their leaves are `Explore`.** Launch every
-orchestrator in a single message so they run concurrently.
+Spawn **every** agent in the tree with the **Agent** tool, type `general-purpose`. It can read,
+grep, and reason about code deeply enough to actually *audit* — the `Explore` type is tuned to
+locate code, not review it, so it makes a weak auditor for this work. The catch: `general-purpose`
+*can* spawn its own subagents, so **every leaf prompt must say explicitly: "you are a leaf — do
+not spawn subagents; analyze your scope yourself and report."** Only orchestrators recurse;
+leaves never do. Launch every orchestrator in a single message so they run concurrently.
 
 Cover two kinds of orchestrator:
 
@@ -143,11 +147,12 @@ YOUR SCOPE — the end-to-end podcast flow:
 Trace the FULL flow (entry -> use-case -> pipeline -> capabilities -> storage ->
 cost -> worker -> progress -> frontend), citing file:line at each hop.
 
-You SHOULD spawn 2-3 Explore subagents for sub-areas (e.g. pipeline+capabilities,
-cost+observability+queue, frontend), each with a precise file scope and the
-briefing's report format. Then CONSOLIDATE their reports and note overlaps.
+You SHOULD spawn 2-3 general-purpose leaf subagents for sub-areas (e.g. pipeline+capabilities,
+cost+observability+queue, frontend), each with a precise file scope, the briefing's report
+format, and an explicit instruction NOT to spawn their own subagents. Then CONSOLIDATE their
+reports and note overlaps.
 
-CRITICAL: in section 8 ("cross-cutting to pass up"), name the SHARED logic you saw
+CRITICAL: in the "cross-cutting to pass up" section, name the SHARED logic you saw
 (retry, progress emission, validation, status mapping, upload, cost charging) PRECISELY,
 so the root can compare it against the other verticals and spot repo-wide duplication.
 
@@ -160,11 +165,12 @@ Write your full consolidated report to <scratch>/reports/podcast.md, then return
 
 ```
 Agent(
-  subagent_type = "Explore",
+  subagent_type = "general-purpose",
   description   = "Podcast cost+observability",
   prompt = """
 You are a LEAF analysis agent. Read <scratch>/BRIEFING.md and follow its issue
-taxonomy + report format exactly. Analysis only — do not edit code.
+taxonomy + report format exactly. Analysis only — do not edit code, and do NOT
+spawn subagents: analyze this scope yourself and report.
 
 SCOPE (read these and their importers only):
   - src/features/podcast/**/cost*.ts, **/billing*.ts
@@ -200,7 +206,7 @@ When reports return, do not just concatenate them. Cross-reference:
   *mis-attributed evidence* (real finding, wrong file/line), and *duplicates* across agents.
   Leaf agents especially over-claim dead code — when two reports disagree, resolve it against
   source, not by trusting either. Any code you quote in the final report comes from **your own
-  read**, never pasted from a sub-agent — a wrong excerpt becomes a wrong fix. If a top
+  read**, never pasted from a sub-agent — a wrong excerpt becomes a wrong finding. If a top
   cross-cutting finding spans more sites than you can verify inline, spawn one focused agent to
   confirm and quantify it across all of them before it enters the report — this is the finding
   type no first-wave agent could see whole, so it's the one most worth a second look.
@@ -260,6 +266,8 @@ duplication, inconsistency, and module depth.
 - **Data clumps / primitive obsession** — the same few fields keep travelling together, or a
   primitive/string stands in for a domain concept that deserves its own type. → bundle them
   into one type, named in `CONTEXT.md` vocabulary.
+- **Speculative generality** — abstraction, params, or hooks added for needs nothing
+  actually has. → inline it back until a real need (a *second* caller) shows up.
 - **Wrong tool for the job** — hand-rolled work where a library/standard already exists:
   manual object validation instead of **zod** (or the project's schema lib), hand-built
   date math instead of the date lib, bespoke HTTP/retry instead of the shared client,
@@ -272,8 +280,6 @@ duplication, inconsistency, and module depth.
   bounce between many tiny modules. Apply the **deletion test**: imagine removing it — if
   complexity vanishes it was a pass-through; if complexity reappears across N callers it
   earned its keep.
-- **Speculative generality** — abstraction, params, or hooks added for needs nothing
-  actually has. → inline it back until a real need (a *second* caller) shows up.
 - **Deepening opportunities** — where extracting a module would concentrate
   change/knowledge in one place (locality) and give callers leverage. Guard against the
   inverse mistake (premature abstraction): **one caller is a hypothetical seam, two callers
@@ -297,8 +303,9 @@ duplication, inconsistency, and module depth.
 
 ## Pitfalls
 
-- **Explore agents can't recurse** — give recursion duty to `general-purpose`
-  orchestrators only.
+- **Leaves must be told not to recurse** — every agent is `general-purpose`, which *can*
+  spawn subagents, so each leaf prompt must explicitly forbid spawning; otherwise the tree
+  can fan out unboundedly. Only orchestrators recurse.
 - **Over-claimed dead code** is the #1 failure mode — require importer verification and
   re-verify contradictions yourself at the top.
 - **Scope overlap** wastes tokens — map first, give each agent a precise file scope, and

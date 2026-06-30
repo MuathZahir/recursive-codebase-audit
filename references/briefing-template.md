@@ -48,20 +48,20 @@ condemned. But you MUST identify, in YOUR scope:
    upload, status mapping, error handling, boilerplate) that should be one module.
 3. **Inconsistency across similar features** — parallel features doing the same job
    differently for no reason. Be concrete about the difference.
-4. **Wrong tool for the job** — manual validation instead of zod/the project's schema lib;
-   hand-rolled HTTP/retry instead of the shared client; bespoke date math; raw SQL strings
-   instead of the query builder; `JSON.parse` with no schema.
-5. **Weak / unsafe typing** — `any`, `as any`, unchecked casts, `@ts-ignore`, `!` non-null
-   assertions, untyped boundaries, missing return types on exported APIs, stringly-typed enums.
-6. **Shallow modules** — interface ≈ implementation; pass-through wrappers. Apply the
-   deletion test.
-7. **Deepening / extraction opportunities** — where pulling out a module concentrates
-   complexity (locality) and gives callers leverage. **One caller = hypothetical seam; two =
-   real seam** — don't propose a shared module until the second caller exists.
-8. **Structural smells across files** (the tree's specialty — only visible at consolidation):
+4. **Structural smells across files** (the tree's specialty — only visible at consolidation):
    *shotgun surgery* (one change → edits in many files), *divergent change* (one module edited
    for many reasons), *repeated switches* on the same type, *data clumps / primitive obsession*,
    *speculative generality* (abstraction for needs nothing has).
+5. **Wrong tool for the job** — manual validation instead of zod/the project's schema lib;
+   hand-rolled HTTP/retry instead of the shared client; bespoke date math; raw SQL strings
+   instead of the query builder; `JSON.parse` with no schema.
+6. **Weak / unsafe typing** — `any`, `as any`, unchecked casts, `@ts-ignore`, `!` non-null
+   assertions, untyped boundaries, missing return types on exported APIs, stringly-typed enums.
+7. **Shallow modules** — interface ≈ implementation; pass-through wrappers. Apply the
+   deletion test.
+8. **Deepening / extraction opportunities** — where pulling out a module concentrates
+   complexity (locality) and gives callers leverage. **One caller = hypothetical seam; two =
+   real seam** — don't propose a shared module until the second caller exists.
 
 ## Vocabulary (use these exact terms)
 - **Module** — interface + implementation. **Interface** — everything a caller must know
@@ -73,16 +73,19 @@ condemned. But you MUST identify, in YOUR scope:
 - **Locality** — change/knowledge in one place. **Leverage** — what callers gain.
 - **Seam** — where an interface lives; one adapter = hypothetical, two = real.
 
-## Recursion (spawn your own subagents if your scope is large)
-If you are a `general-purpose` orchestrator, spawn 2-4 `Explore` leaf subagents for
-sub-areas, each with a precise file scope and THIS report format. Then CONSOLIDATE their
-findings and explicitly note cross-sub-area overlaps — those are the real wins. Pass them up.
-(`Explore` agents cannot spawn subagents; if you are one, just analyze and report.)
+## Recursion (only orchestrators recurse)
+If your prompt designates you an ORCHESTRATOR, spawn 2-4 `general-purpose` leaf subagents for
+sub-areas, each with a precise file scope, THIS report format, and an explicit instruction NOT
+to spawn further subagents. Then CONSOLIDATE their findings and explicitly note cross-sub-area
+overlaps — those are the real wins. Pass them up. If your prompt designates you a LEAF, do not
+spawn anything: analyze your scope yourself and report.
 
 ## Report format
 Return the structure your parent gives you (the layout in `agent-output-structure.md`), AND
 write your full report to the file path your parent assigns (then return it as your final
 message). Cite `file:line` for every claim and **quote the offending hunk** so the parent can
-vet without re-finding it. For each finding give: the canonical key, kind (violation /
-judgement call), rough effort (S/M/L), risk of the fix, and confidence. Mark uncertainty.
-Prefer precision over breadth — claims grounded in code you actually read.
+vet without re-finding it. For each finding give the canonical key, kind (violation /
+judgement call), and confidence. Spend the full detail — effort (S/M/L) and risk — on
+**judgement calls and extraction opportunities**, where the ranking actually turns on it; a
+verified dead export can stay terse (effort S, risk low). Mark uncertainty. Prefer precision
+over breadth — claims grounded in code you actually read.

@@ -86,7 +86,8 @@ Claude Code discovers it on the next session.
 
 ## Usage
 
-Invoke it whenever the work is repo-wide or multi-feature:
+Reach for it when the codebase is large and genuinely multi-feature, and a repo-wide pattern is
+the real question:
 
 > review the whole codebase for dead code and duplication
 >
@@ -98,7 +99,9 @@ Invoke it whenever the work is repo-wide or multi-feature:
 
 If the scope fits in one agent's head, a normal review is the better tool — this is for breadth.
 
-> **Note:** A thorough run can spawn dozens of sub-agents and is a meaningful token spend. The
+> **Note:** A thorough run spawns dozens of sub-agents and is a meaningful token spend, and the
+> deliverable is a large *diagnostic* — a ranked report of findings, not a handful of quick
+> fixes. It pays off when you have a way to absorb that report (turn it into issues/tasks). The
 > skill states the tree shape and rough cost before a large fan-out.
 
 ## License
